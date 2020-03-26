@@ -1,113 +1,52 @@
-var gulp         = require('gulp'),
-		sass         = require('gulp-sass'),
-		browserSync  = require('browser-sync'),
-		concat       = require('gulp-concat'),
-		uglify       = require('gulp-uglify-es').default,
-		cleancss     = require('gulp-clean-css'),
-		autoprefixer = require('gulp-autoprefixer'),
-		rsync        = require('gulp-rsync'),
-		newer        = require('gulp-newer'),
-		rename       = require('gulp-rename'),
-		responsive   = require('gulp-responsive'),
-		del          = require('del');
+var gulp = require('gulp');
+var browserSync = require('browser-sync').create();
+var less = require('gulp-less');
+var plumber = require('gulp-plumber');
+var notify = require('gulp-notify');
+var sourcemaps = require('gulp-sourcemaps');
+var autoprefixer = require('gulp-autoprefixer');
+var watch = require('gulp-watch');
 
-// Local Server
-gulp.task('browser-sync', function() {
-	browserSync({
-		server: {
-			baseDir: 'app'
-		},
-		notify: false,
-		// online: false, // Work offline without internet connection
-		// tunnel: true, tunnel: 'indicat', // Demonstration page: http://indicat.localtunnel.me
-	})
+gulp.task('server', ['styles'], function() {
+	
+	browserSync.init({
+		server: { baseDir: './app/'}
+	});
+
+	// watch('./app/**/*.html', browserSync.stream());
+	// watch('./app/**/*.js', browserSync.reload());
+	// watch('./app/img/*.*', browserSync.reload());
+
+
+    watch(['./app/**/*.html', './app/**/*.js', './app/img/*.*']).on('change', browserSync.reload);
+
+
+	watch('./app/less/**/*.less', function(){
+		gulp.start('styles');
+	});
+
 });
-function bsReload(done) { browserSync.reload(); done(); };
 
-// Custom Styles
 gulp.task('styles', function() {
-	return gulp.src('app/sass/**/*.sass')
-	.pipe(sass({ outputStyle: 'expanded' }))
-	.pipe(concat('styles.min.css'))
+	return gulp.src('./app/less/main.less')
+	.pipe(plumber({
+		errorHandler: notify.onError(function(err){
+			return {
+				title: 'Styles',
+				sound: false,
+				message: err.message
+			}
+		})
+	}))
+	.pipe(sourcemaps.init())
+	.pipe(less())
 	.pipe(autoprefixer({
-		grid: true,
-		overrideBrowserslist: ['last 10 versions']
+		browsers: ['last 6 versions'],
+		cascade: false
 	}))
-	.pipe(cleancss( {level: { 1: { specialComments: 0 } } })) // Optional. Comment out when debugging
-	.pipe(gulp.dest('app/css'))
-	.pipe(browserSync.stream())
+	.pipe(sourcemaps.write())
+	.pipe(gulp.dest('./app/css'))
+	.pipe(browserSync.stream());
 });
 
-// Scripts & JS Libraries
-gulp.task('scripts', function() {
-	return gulp.src([
-		// 'node_modules/jquery/dist/jquery.min.js', // Optional jQuery plug-in (npm i --save-dev jquery)
-		'app/js/_lazy.js', // JS library plug-in example
-		'app/js/_custom.js', // Custom scripts. Always at the end
-		])
-	.pipe(concat('scripts.min.js'))
-	.pipe(uglify()) // Minify js (opt.)
-	.pipe(gulp.dest('app/js'))
-	.pipe(browserSync.reload({ stream: true }))
-});
-
-// Responsive Images
-var quality = 95; // Responsive images quality
-
-// Produce @1x images
-gulp.task('img-responsive-1x', async function() {
-	return gulp.src('app/img/_src/**/*.{png,jpg,jpeg,webp,raw}')
-		.pipe(newer('app/img/@1x'))
-		.pipe(responsive({
-			'**/*': { width: '50%', quality: quality }
-		})).on('error', function (e) { console.log(e) })
-		.pipe(rename(function (path) {path.extname = path.extname.replace('jpeg', 'jpg')}))
-		.pipe(gulp.dest('app/img/@1x'))
-});
-// Produce @2x images
-gulp.task('img-responsive-2x', async function() {
-	return gulp.src('app/img/_src/**/*.{png,jpg,jpeg,webp,raw}')
-		.pipe(newer('app/img/@2x'))
-		.pipe(responsive({
-			'**/*': { width: '100%', quality: quality }
-		})).on('error', function (e) { console.log(e) })
-		.pipe(rename(function (path) {path.extname = path.extname.replace('jpeg', 'jpg')}))
-		.pipe(gulp.dest('app/img/@2x'))
-});
-gulp.task('img', gulp.series('img-responsive-1x', 'img-responsive-2x', bsReload));
-
-// Clean @*x IMG's
-gulp.task('cleanimg', function() {
-	return del(['app/img/@*'], { force: true })
-});
-
-// Code & Reload
-gulp.task('code', function() {
-	return gulp.src('app/**/*.html')
-	.pipe(browserSync.reload({ stream: true }))
-});
-
-// Deploy
-gulp.task('rsync', function() {
-	return gulp.src('app/')
-	.pipe(rsync({
-		root: 'app/',
-		hostname: 'username@yousite.com',
-		destination: 'yousite/public_html/',
-		// include: ['*.htaccess'], // Included files
-		exclude: ['**/Thumbs.db', '**/*.DS_Store'], // Excluded files
-		recursive: true,
-		archive: true,
-		silent: false,
-		compress: true
-	}))
-});
-
-gulp.task('watch', function() {
-	gulp.watch('app/sass/**/*.sass', gulp.parallel('styles'));
-	gulp.watch(['libs/**/*.js', 'app/js/_custom.js'], gulp.parallel('scripts'));
-	gulp.watch('app/*.html', gulp.parallel('code'));
-	gulp.watch('app/img/_src/**/*', gulp.parallel('img'));
-});
-
-gulp.task('default', gulp.parallel('img', 'styles', 'scripts', 'browser-sync', 'watch'));
+gulp.task('default', ['server']);
