@@ -56,7 +56,7 @@ gulp.task('styles', function() {
 
 
 gulp.task('html', function() {
-	return gulp.src('./app/less/html/*.html')
+	return gulp.src('./app/html/*.html')
 	.pipe(plumber({
 		errorHandler: notify.onError(function(err){
 			return {
