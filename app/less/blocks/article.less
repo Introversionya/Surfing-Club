@@ -44,8 +44,8 @@
         font-weight: 700;
         line-height: 66px;
         letter-spacing: 13px;
-        top: 0;
-        left: -17px;
+        top: -17px;
+        left: 0;
         z-index: -1;
     }
 
@@ -89,6 +89,16 @@
     position: absolute;
     right: -30px;
     top: 0;
+
+.articale--even & {
+    @media  (max-width: 1400px) {
+         right: 30px;
+         top: 30px;
+            .article__preview-desc-content {
+                color: #fff;
+            }
+        }
+    }
 
     .article--odd & {
         left: -30px;
