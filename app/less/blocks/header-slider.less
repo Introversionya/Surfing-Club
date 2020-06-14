@@ -1,5 +1,8 @@
 .slide-wrapper {
     position: relative;
+    width: 100%;
+    overflow: hidden;
+    padding-bottom: 95px;
 }
 
 .slide-item {
@@ -76,6 +79,11 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    z-index: 9;
+}
+
+#headerSlider.owl-carousel .owl-stage-outer {
+    overflow: visible;
 }
 
 .slide-controls__left {
